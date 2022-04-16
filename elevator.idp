@@ -91,7 +91,7 @@ Theory T_student:V_student {
     // Scanning movement
     ! t[Time] f[Floor]: ElPosition(t) = f & (? fx[Floor] tx[Time]: fx > f & tx =< t & UnansweredRequest(tx, fx)) => do(t, Up). // Go up if there is a higher unanswered request
     ! t[Time] f[Floor]: ElPosition(t) = f & (? fx[Floor] tx[Time]: fx < f & tx =< t & UnansweredRequest(tx, fx)) => do(t, Down).
-    ~(! t[Time] f[Floor]: UnansweredRequest(t, f) => do(t, Stay)).
+    ! t[Time]: ~(?f[Floor]: UnansweredRequest(t, f)) => do(t, Stay).
 }
 
 
