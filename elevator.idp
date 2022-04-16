@@ -28,25 +28,16 @@ LTCvocabulary V_fixed {
 LTCvocabulary V_student {
     extern vocabulary V_fixed
             
-    type ElAction constructed from {Up, Down, Stay, Open, Close}
-    do(Time, ElAction)
-    
-    //type ScanState constructed from {GoingUp, GoingDown, Idle}
-    //ElScanState(Time): ScanState
-    
-    // Answered requests, wanneer deuren opengegeaan zijn en dicht
-    // Soort van hetzelfde al ~UnansweredRequesrt maar toegevoegd voor de ease of use
-    AnsweredRequest(Time, Floor)
-    C_AnsweredRequest(Time, Floor)
-    Cn_AnsweredRequest(Time, Floor)
+    type ElAction constructed from {Up, Down, Stay}
+    do(Time, ElAction) 
     
     // Elevator position, no initial needed becuase starts at bottom = 0
     C_ElPosition(Time, Floor)
     Cn_ElPosition(Time, Floor)
     
     // Unanswered request
-    C_UnansweredRequest(Time, Floor)
-    Cn_UnansweredRequest(Time, Floor)
+    //C_UnansweredRequest(Time, Floor)
+    //Cn_UnansweredRequest(Time, Floor)
 }
 
 // TIME THEORY
@@ -63,62 +54,30 @@ Theory T_fixed : V_student {
 // STUDENT THEORY
 // Here you should model the dynamic elevator system
 Theory T_student:V_student {
-	// Cause predicates for ElPosition, UnansweredRequest
-    {
-        ! t[Time] f[Floor]: AnsweredRequest(Next(t), f) <- C_AnsweredRequest(t, f).
-        ! t[Time] f[Floor]: AnsweredRequest(Next(t), f) <- AnsweredRequest(t, f) & ~Cn_AnsweredRequest(t, f).
-    }
     
+    // CAUSE PREDICATES
     {
         ElPosition(Start) = 0.
         ! t[Time] f[Floor]: ElPosition(Next(t)) = f <- C_ElPosition(t, f).
         ! t[Time] f[Floor]: ElPosition(Next(t)) = f <- ElPosition(t) = f & ~Cn_ElPosition(t, f).
     }
-    
     {
-        ! t[Time] f[Floor]: UnansweredRequest(Next(t), f) <- C_UnansweredRequest(t, f).
-        ! t[Time] f[Floor]: UnansweredRequest(Next(t), f) <- UnansweredRequest(t, f) & ~Cn_UnansweredRequest(t, f).
-    }
-    
-    
-    // Define causal predicates
-    {
-        // Er is een unansweredrequest op een momen, en de lift is later op deze positie en opent en closed zijn deuren
-        // CAUTION Even zonder doorstates werken ! t[Time] f[Floor]: C_AnsweredRequest(t +1, f) <- ? tx[Time]: tx < t & UnansweredRequest(tx, f) & ( ElPosition(t) = f & ElDoorState(t) = Open & ElDoorState(t+1) = Closed) .
-        ! t[Time] f[Floor]: C_AnsweredRequest(t, f) <- ? tx[Time]: tx < t & UnansweredRequest(tx, f) & ElPosition(t) = f .
-
-        // Kan op ditmoment niet geuncaused worden, evt wel toe te voegen voor modulariteit
-    }
-    
-    // TODO waar max floor etc aantonen? Denk hier niet nodig en enkel bij de constraints van aciotns want dan zou action nooit kunnen plaatsvcinden
-    {
-    	! t[Time] f[Floor]: C_ElPosition(t, ElPosition(t) + 1) <- do(t, Up).
-        ! t[Time] f[Floor]: C_ElPosition(t, ElPosition(t) - 1) <- do(t, Down).
-        // ??? ! t[Time] f[Floor]: C_ElPosition(t, ElPosition(t)) <- do(t, Stay) | do(t, Open) | do(t, Close).
+    	! t[Time] f[Floor]: C_ElPosition(t, f+1) <- do(t, Up) & ElPosition(t) = f.
+        ! t[Time] f[Floor]: C_ElPosition(t, f-1) <- do(t, Down) & ElPosition(t) = f.
+        ! t[Time] f[Floor]: C_ElPosition(t, f) <- do(t, Stay) & ElPosition(t) = f.
         ! t[Time] f[Floor]: Cn_ElPosition(t, f) <- ? fx[Floor]: C_ElPosition(t, fx) & f ~= fx.
     }
     
-    {
-        ! t[Time] f[Floor]: C_UnansweredRequest(t, f) <- MakeRequest(t, f) & ~UnansweredRequest(t, f).
-        // De lift is er al geweest en heeft zijn deuren geopend, maakt niet uit wanneer... moet enkel later gebeurd zijn
-        ! t[Time] f[Floor]: Cn_UnansweredRequest(t, f) <- ? tx[Time] : tx > t & AnsweredRequest(tx, f).
-    }
     
-    // Preconditions en constraints
-    // Max en Min floor
+   	// 1 action at a time
+	! t[Time]: ?=1 a[ElAction]: do(t, a).
+
+	// Max en Min floor
     ! t[Time] f[Floor]: ElPosition(t) = f & do(t, Up) => ? fx[Floor]: fx > f.
     ! t[Time] f[Floor]: ElPosition(t) = f & do(t, Down) => ? fx[Floor]: fx < f.
     
     // Doors closed when moving
-    ! t[Time] f[Floor]: do(t, Up) | do(t, Down) => ElDoorState(t) = Closed.
-    
-    // 1 action at a time
-    ! t[Time]: ?=1 a[ElAction]: do(t, a).
-    
-    // Scanning rules
-    // Als de vorige actie naar boven was, nog eens
-    //! t[Time] f[Floor]: do(t-1, Up) | (do(t-1, Close) & do(t-3, Up)) => ? fx[Floor]: fx > f.
-
+    ! t[Time] : do(t, Up) | do(t, Down) => ElDoorState(t) = Closed.
 }
 
 
