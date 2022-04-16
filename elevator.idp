@@ -36,8 +36,8 @@ LTCvocabulary V_student {
     Cn_ElPosition(Time, Floor)
     
     // Unanswered request
-    //C_UnansweredRequest(Time, Floor)
-    //Cn_UnansweredRequest(Time, Floor)
+    C_UnansweredRequest(Time, Floor)
+    Cn_UnansweredRequest(Time, Floor)
 }
 
 // TIME THEORY
@@ -68,6 +68,15 @@ Theory T_student:V_student {
         ! t[Time] f[Floor]: Cn_ElPosition(t, f) <- ? fx[Floor]: C_ElPosition(t, fx) & f ~= fx.
     }
     
+    {
+        ! t[Time] f[Floor]: UnansweredRequest(Next(t), f) <- C_UnansweredRequest(t, f).
+        ! t[Time] f[Floor]: UnansweredRequest(Next(t), f) <- UnansweredRequest(t, f) & ~Cn_UnansweredRequest(t, f).
+    }
+    {
+        ! t[Time] f[Floor]: C_UnansweredRequest(t, f) <- MakeRequest(t, f) & ~UnansweredRequest(t, f).
+        ! t[Time] f[Floor]: Cn_UnansweredRequest(t, f) <-  ? tx[Time] : tx =< t & UnansweredRequest(tx, f) & ElPosition(t) = f. // TODO ADD DOORSTATES // De lift is er al geweest en heeft zijn deuren geopend, maakt niet uit wanneer... moet enkel later gebeurd zijn
+    }
+    
     
    	// 1 action at a time
 	! t[Time]: ?=1 a[ElAction]: do(t, a).
@@ -78,6 +87,11 @@ Theory T_student:V_student {
     
     // Doors closed when moving
     ! t[Time] : do(t, Up) | do(t, Down) => ElDoorState(t) = Closed.
+    
+    // Scanning movement
+    ! t[Time] f[Floor]: ElPosition(t) = f & (? fx[Floor] tx[Time]: fx > f & tx =< t & UnansweredRequest(tx, fx)) => do(t, Up). // Go up if there is a higher unanswered request
+    ! t[Time] f[Floor]: ElPosition(t) = f & (? fx[Floor] tx[Time]: fx < f & tx =< t & UnansweredRequest(tx, fx)) => do(t, Down).
+    ~(! t[Time] f[Floor]: UnansweredRequest(t, f) => do(t, Stay)).
 }
 
 
@@ -86,6 +100,8 @@ Theory T_student:V_student {
 procedure main() {
     local CompleteTheory = merge(T_fixed, T_student)
 
+    //explainunsat(CompleteTheory, S1)
+    
     // Change the structure name to try other structures (check the included file "structures.idp" for available provided structures, and feel free to add additional structures)
     model = onemodel(CompleteTheory, S1)
 
