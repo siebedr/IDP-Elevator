@@ -1,0 +1,144 @@
+// This file contains necessary formalizations and procedures for visualization of the IDP elevator project.
+// DO NOT CHANGE THIS FILE!!!
+
+include "idpd3/idpd3_voc.idp"
+include <table_utils>
+
+vocabulary V_visual {
+    extern vocabulary idpd3::V_out
+    extern vocabulary V_fixed
+	ToFloorKey(Floor) : key
+    ToRequestKey(Floor): key
+    timeKey: key
+    toTimeLabel(Time): label
+    TopFloor : Floor
+    w: width
+}
+
+theory T_visual : V_visual {    
+    {
+       !t[Time] f[Floor]: d3_type(t, ToFloorKey(f)) = rect.
+       !t[Time] f[Floor]: d3_rect_width(t, ToFloorKey(f)) = 2.
+       !t[Time] f[Floor]: d3_rect_height(t, ToFloorKey(f)) = 2.
+       !t[Time] f[Floor]: d3_x(t, ToFloorKey(f)) = d3_width(t)/2.
+       !t[Time] f[Floor]: d3_y(t, ToFloorKey(f)) = d3_height(t)-(2*f) - 2.
+       
+       !t[Time] f[Floor]: d3_color(t, ToFloorKey(f)) = "red" <- ElPosition(t) = f & ElDoorState(t) = Closed.
+       !t[Time] f[Floor]: d3_color(t, ToFloorKey(f)) = "green" <- ElPosition(t) = f & ElDoorState(t) = Open.
+	   !t[Time] f[Floor]: d3_color(t, ToFloorKey(f)) = "grey" <- ElPosition(t) ~= f.
+       !t[Time] f[Floor]: d3_order(t, ToFloorKey(f)) = 0.
+        
+       // Unanswered requests
+       !t[Time] f[Floor]: d3_type(t, ToRequestKey(f)) = rect <- UnansweredRequest(t, f).
+       !t[Time] f[Floor]: d3_rect_width(t, ToRequestKey(f)) = 1 <- UnansweredRequest(t, f).
+       !t[Time] f[Floor]: d3_rect_height(t, ToRequestKey(f)) = 1 <- UnansweredRequest(t, f).
+       !t[Time] f[Floor]: d3_x(t, ToRequestKey(f)) = d3_width(t)/2 <- UnansweredRequest(t, f).
+       !t[Time] f[Floor]: d3_y(t, ToRequestKey(f)) = d3_height(t)-(2*f) - 2 <- UnansweredRequest(t, f).
+       !t[Time] f[Floor]: d3_order(t, ToRequestKey(f)) = 1 <- UnansweredRequest(t, f).
+       !t[Time] f[Floor]: d3_color(t, ToRequestKey(f)) = "blue" <- UnansweredRequest(t, f).
+       !t[Time] f[Floor]: d3_order(t, ToRequestKey(f)) = 1.
+        
+       // Time label
+       !t[time]: d3_type(t, timeKey) = text.
+       !t[time]: d3_text_label(t, timeKey) = toTimeLabel(t).
+       !t[time]: d3_x(t, timeKey) = d3_width(t)/2.
+       !t[time]: d3_y(t, timeKey) = 2.
+       !t[time]: d3_text_size(t, timeKey) = 1.
+       !t[time]: d3_order(t, timeKey) = 0.
+	}
+        
+    ! t[time]: d3_width(t) = 2*MAX[:Floor]+6.
+    ! t[time]: d3_height(t) = d3_width(t).
+    TopFloor = 1.
+}
+
+procedure ToFloorKey(x) {
+    return "pos"..tostring(x)
+}
+
+procedure ToRequestKey(x) {
+    return "request"..tostring(x)
+}
+
+procedure toTimeLabel(t) {
+    return "Time: "..tostring(t)
+}
+
+structure visualStruct : V_visual {
+	order = { 0..4 }
+    image = { "" }
+    color = { "black"; "grey"; "red"; "blue"; "green"}
+    time = { 0 }
+    Time = { 0 }
+    width = { 0..100 }
+    height = { 0..100}
+    Start = 0
+    TopFloor = 1
+    ToFloorKey = procedure ToFloorKey
+    ToRequestKey = procedure ToRequestKey
+    toTimeLabel = procedure toTimeLabel
+    timeKey = "time"
+    
+}
+
+procedure visualizeElevator(struct) {
+	print("visualising...")
+    if struct == nil then
+        print("A nil structure provided, most likely as a result from unsat.")
+        return
+    end
+    local ti = os.clock()
+    local newStruct = clone(struct)
+    setvocabulary(newStruct, V_visual)
+    
+    // time
+    newStruct[V_visual::time.type] = newStruct[V_fixed::Time.type]
+    
+    // width and height
+
+    m = 5
+    w = 5
+    newStruct[idpd3::V_types::width.type] = range(0, w*m)
+    newStruct[idpd3::V_types::height.type] = range(0, w*m)
+    
+    newStruct[V_visual::ToFloorKey] = visualStruct[V_visual::ToFloorKey]
+    newStruct[V_visual::ToRequestKey] = visualStruct[V_visual::ToRequestKey]
+    newStruct[V_visual::toTimeLabel] = visualStruct[V_visual::toTimeLabel]
+    newStruct[V_visual::timeKey] = visualStruct[V_visual::timeKey]
+    
+    // keys
+    local key = {"test", "time"}
+    for k,v in pairs(totable(newStruct[V_fixed::Floor.type])) do
+        table.insert(key, ToFloorKey(v))
+        table.insert(key, ToRequestKey(v))
+    end
+    newStruct[idpd3::V_types::key.type] = key
+    
+    // labels
+    local label = {}
+    for k,v in pairs(totable(newStruct[V_fixed::Time.type])) do
+        table.insert(label, toTimeLabel(v))
+    end
+    newStruct[idpd3::V_types::label.type] = label
+    
+    
+    newStruct[idpd3::V_types::color.type] = visualStruct[idpd3::V_types::color.type]
+    newStruct[idpd3::V_types::order.type] = visualStruct[idpd3::V_types::order.type]
+    
+    local ntime = os.clock() + 0.1
+    repeat until os.clock() > ntime
+    local model = onemodel(T_visual, newStruct, V_visual)
+    print(model)
+    idpd3C.visualise(model)
+    ntime = os.clock() + 0.1
+    repeat until os.clock() > ntime
+    local secs = os.clock() - ti + 0.2
+    print("Visualisation took "..tostring(secs).." seconds.")
+}
+
+procedure initVisualization() {
+    idpd3B = idpd3
+    idpd3.init_idpd3()
+    idpd3C = idpd3
+    idpd3 = idpd3B
+}

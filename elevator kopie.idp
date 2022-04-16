@@ -1,0 +1,146 @@
+// First name: Siebe
+// Last name: Dreesen
+// Student number: r0884600
+
+
+// FIXED VOCABULARY
+// DO NOT CHANGE THIS VOCABULARY
+LTCvocabulary V_fixed {
+    type Time isa nat			// A set of time points
+    Start: Time 				// The initial time point
+    partial Next(Time): Time 	// The successor time point of time point t
+
+    type Floor isa nat									// The set of floors
+    type DoorState constructed from {Closed, Open}		// A set of possible states of the elevator’s doors
+
+    // Fluents
+    ElPosition(Time):Floor				// The floor of the elevator at time point t
+    ElDoorState(Time):DoorState			// The state of the elevator’s doors at time point t
+    UnansweredRequest(Time, Floor)		// Denotes that there is an unanswered request at floor f at time point t
+
+    // Actions
+    MakeRequest(Time, Floor) 			// Denotes that a request is made for floor f at time point t
+}
+
+
+// STUDENT VOCABULARY
+// Here you can add new types, functions and predicates
+LTCvocabulary V_student {
+    extern vocabulary V_fixed
+            
+    type ElAction constructed from {Up, Down, Stay, Open, Close}
+    do(Time, ElAction)
+    
+    //type ScanState constructed from {GoingUp, GoingDown, Idle}
+    //ElScanState(Time): ScanState
+    
+    // Answered requests, wanneer deuren opengegeaan zijn en dicht
+    // Soort van hetzelfde al ~UnansweredRequesrt maar toegevoegd voor de ease of use
+    AnsweredRequest(Time, Floor)
+    C_AnsweredRequest(Time, Floor)
+    Cn_AnsweredRequest(Time, Floor)
+    
+    // Elevator position, no initial needed becuase starts at bottom = 0
+    C_ElPosition(Time, Floor)
+    Cn_ElPosition(Time, Floor)
+    
+    // Unanswered request
+    C_UnansweredRequest(Time, Floor)
+    Cn_UnansweredRequest(Time, Floor)
+}
+
+// TIME THEORY
+// DO NOT CHANGE THIS THEORY
+Theory T_fixed : V_student {
+    // Defining time
+    {
+        Start = MIN[:Time].
+        ! t: Next(t) = t+1 <- Time(t+1).
+    }
+}
+
+
+// STUDENT THEORY
+// Here you should model the dynamic elevator system
+Theory T_student:V_student {
+	// Cause predicates for ElPosition, UnansweredRequest
+    {
+        ! t[Time] f[Floor]: AnsweredRequest(Next(t), f) <- C_AnsweredRequest(t, f).
+        ! t[Time] f[Floor]: AnsweredRequest(Next(t), f) <- AnsweredRequest(t, f) & ~Cn_AnsweredRequest(t, f).
+    }
+    
+    {
+        ElPosition(Start) = 0.
+        ! t[Time] f[Floor]: ElPosition(Next(t)) = f <- C_ElPosition(t, f).
+        ! t[Time] f[Floor]: ElPosition(Next(t)) = f <- ElPosition(t) = f & ~Cn_ElPosition(t, f).
+    }
+    
+    {
+        ! t[Time] f[Floor]: UnansweredRequest(Next(t), f) <- C_UnansweredRequest(t, f).
+        ! t[Time] f[Floor]: UnansweredRequest(Next(t), f) <- UnansweredRequest(t, f) & ~Cn_UnansweredRequest(t, f).
+    }
+    
+    
+    // Define causal predicates
+    {
+        // Er is een unansweredrequest op een momen, en de lift is later op deze positie en opent en closed zijn deuren
+        // CAUTION Even zonder doorstates werken ! t[Time] f[Floor]: C_AnsweredRequest(t +1, f) <- ? tx[Time]: tx < t & UnansweredRequest(tx, f) & ( ElPosition(t) = f & ElDoorState(t) = Open & ElDoorState(t+1) = Closed) .
+        ! t[Time] f[Floor]: C_AnsweredRequest(t, f) <- ? tx[Time]: tx < t & UnansweredRequest(tx, f) & ElPosition(t) = f .
+
+        // Kan op ditmoment niet geuncaused worden, evt wel toe te voegen voor modulariteit
+    }
+    
+    // TODO waar max floor etc aantonen? Denk hier niet nodig en enkel bij de constraints van aciotns want dan zou action nooit kunnen plaatsvcinden
+    {
+    	! t[Time] f[Floor]: C_ElPosition(t, ElPosition(t) + 1) <- do(t, Up).
+        ! t[Time] f[Floor]: C_ElPosition(t, ElPosition(t) - 1) <- do(t, Down).
+        // ??? ! t[Time] f[Floor]: C_ElPosition(t, ElPosition(t)) <- do(t, Stay) | do(t, Open) | do(t, Close).
+        ! t[Time] f[Floor]: Cn_ElPosition(t, f) <- ? fx[Floor]: C_ElPosition(t, fx) & f ~= fx.
+    }
+    
+    {
+        ! t[Time] f[Floor]: C_UnansweredRequest(t, f) <- MakeRequest(t, f) & ~UnansweredRequest(t, f).
+        // De lift is er al geweest en heeft zijn deuren geopend, maakt niet uit wanneer... moet enkel later gebeurd zijn
+        ! t[Time] f[Floor]: Cn_UnansweredRequest(t, f) <- ? tx[Time] : tx > t & AnsweredRequest(tx, f).
+    }
+    
+    // Preconditions en constraints
+    // Max en Min floor
+    ! t[Time] f[Floor]: ElPosition(t) = f & do(t, Up) => ? fx[Floor]: fx > f.
+    ! t[Time] f[Floor]: ElPosition(t) = f & do(t, Down) => ? fx[Floor]: fx < f.
+    
+    // Doors closed when moving
+    ! t[Time] f[Floor]: do(t, Up) | do(t, Down) => ElDoorState(t) = Closed.
+    
+    // 1 action at a time
+    ! t[Time]: ?=1 a[ElAction]: do(t, a).
+    
+    // Scanning rules
+    // Als de vorige actie naar boven was, nog eens
+    //! t[Time] f[Floor]: do(t-1, Up) | (do(t-1, Close) & do(t-3, Up)) => ? fx[Floor]: fx > f.
+
+}
+
+
+// MAIN PROCEDURE
+// If you have to change the main procedure for debugging purposes, be careful and restore it back once you finish debugging.
+procedure main() {
+    local CompleteTheory = merge(T_fixed, T_student)
+
+    // Change the structure name to try other structures (check the included file "structures.idp" for available provided structures, and feel free to add additional structures)
+    model = onemodel(CompleteTheory, S1)
+
+    // Printing model
+    print(model)
+
+    // Visualization
+    initVisualization()
+    visualizeElevator(model)
+}
+
+// File responsible for visualization
+include "visualize_elevator.idp"
+
+// Structures for testing
+// You can open this file and check the given structures
+include "structures.idp"

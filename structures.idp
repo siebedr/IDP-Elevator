@@ -1,0 +1,61 @@
+// This file contains structures describing some different scenarios for the elevator to handle.
+// Each structure provides a time range, a number of floors and a sequence of requests being made.
+// Make sure your elevator specification handles each of these scenarios correctly.
+// In case you would like to add extra structures, you can do so at the end of this file.
+
+
+Structure S1:V_student {
+    Time = {0..10}
+    Floor = {0..5}
+    MakeRequest = {0, 4}
+}
+
+
+Structure S2:V_student {
+    Time = {0..10}
+    Floor = {0..5}
+    MakeRequest = {0, 2; 1, 4}
+}
+
+
+Structure S3:V_student {
+    Time = {0..15}
+    Floor = {0..5}
+    MakeRequest = {0, 4; 3, 2}
+}
+
+
+Structure S4:V_student {
+    Time = {0..15}
+    Floor = {0..5}
+    MakeRequest = {0, 4; 2, 2}
+}
+
+
+Structure S5:V_student {
+    Time = {0..20}
+    Floor = {0..5}
+    MakeRequest = {0, 5; 2, 3; 3, 2; 15, 3}
+}
+
+
+Structure S6:V_student {
+    Time = {0..20}
+    Floor = {0..7}
+    MakeRequest = {0, 4; 7, 2; 7, 6}
+}
+
+
+Structure S7:V_student {
+    Time = {0..20}
+    Floor = {0..7}
+    MakeRequest = {0, 4; 7, 2; 7, 7}
+}
+
+
+// Feel free to add your own structures here:
+
+
+
+
+
