@@ -32,10 +32,10 @@ LTCvocabulary V_student {
     do(Time, ElAction) 
     
     // Needed for the scanning method, direction can only change if nothing in this direction.
-    //type Direction constructed from {GoingUp, GoingDown, Idle}
-    //ElDirection(Time): Direction
-    //C_ElDirection(Time, Direction)
-    //Cn_ElDirection(Time, Direction)
+    type Direction constructed from {GoingUp, GoingDown, Idle}
+    ElDirection(Time): Direction
+    C_ElDirection(Time, Direction)
+    Cn_ElDirection(Time, Direction)
     
     // Elevator position, no initial needed becuase starts at bottom = 0
     C_ElPosition(Time, Floor)
@@ -107,11 +107,10 @@ Theory T_student:V_student {
     {
         ! t[Time]: C_ElDoorState(t, Open) <- do(t, OpenDoor) & ElDoorState(t) = Closed.
    		! t[Time]: C_ElDoorState(t, Closed) <- do(t, CloseDoor) & ElDoorState(t) = Open.
-        //! t[Time] ds[DoorState]: Cn_ElDoorState(t, ds) <- ? dsx[DoorState]: C_ElDoorState(t, dsx) & ds ~= dsx.
+        ! t[Time] ds[DoorState]: Cn_ElDoorState(t, ds) <- ? dsx[DoorState]: C_ElDoorState(t, dsx) & ds ~= dsx.
     }
     
     
-    // PRECONDITIONS
    	// 1 action at a tim
 	! t[Time]: ?=1 a[ElAction]: do(t, a).
 
@@ -122,19 +121,14 @@ Theory T_student:V_student {
     // Doors closed when moving
     ! t[Time] : do(t, Up) | do(t, Down) => ElDoorState(t) = Closed.
     
-    // Constraints on dos
-    ! t[Time]: do(t, OpenDoor) => ElDoorState(t) = Closed.
-    ! t[Time]: do(t, CloseDoor) => ElDoorState(t) = Open.
-    
-    // BEAHAVIOUR
     // Basic movement
-    ! t[Time] f[Floor]: ElPosition(t) = f & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)) => do(t, Up). // Go up if there is a higher unanswered request
-    ! t[Time] f[Floor]: ElPosition(t) = f & (? fx[Floor]: fx < f & UnansweredRequest(t, fx)) => do(t, Down). // Go down if there is a lower unanswered request
+    ! t[Time] f[Floor]: ElPosition(t) = f & (? fx[Floor] tx[Time]: fx > f & tx =< t & UnansweredRequest(tx, fx)) => do(t, Up). // Go up if there is a higher unanswered request
+    ! t[Time] f[Floor]: ElPosition(t) = f & (? fx[Floor] tx[Time]: fx < f & tx =< t & UnansweredRequest(tx, fx)) => do(t, Down). // Go down if there is a lower unanswered request
     ! t[Time]: ~(?f[Floor]: UnansweredRequest(t, f)) & ElDoorState(t) = Closed => do(t, Stay).
     
    	// Door movements
-    ! t[Time] f[Floor]: ElPosition(t) = f & ElDoorState(t) = Closed & UnansweredRequest(t, f) => do(t, OpenDoor). // Deur is dicht en een unanswered request hier
-    ! t[Time]: ElDoorState(t) = Open => do(t, CloseDoor). // Deur staat open en geen unanswered requests hier
+    ! t[Time] f[Floor]: ElPosition(t) = f & ElDoorState(t) = Closed & (? tx[Time]: tx =< t & UnansweredRequest(tx, f)) => do(t, OpenDoor). // Deur is dicht en een unanswered request hier
+    ! t[Time] f[Floor]: ElPosition(t) = f & ElDoorState(t) = Open => do(t, CloseDoor). // Deur staat open en geen unanswered requests hier
 
     // Scanning specifications
     
