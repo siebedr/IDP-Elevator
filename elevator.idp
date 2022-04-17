@@ -74,27 +74,33 @@ Theory T_student:V_student {
     
     
     // CAUSE PREDICATES
+    // Elevator position
     {
         ElPosition(Start) = 0.
         ! t[Time] f[Floor]: ElPosition(Next(t)) = f <- C_ElPosition(t, f).
         ! t[Time] f[Floor]: ElPosition(Next(t)) = f <- ElPosition(t) = f & ~Cn_ElPosition(t, f).
     }
     {
+        // How changes of the elevators position are caused and uncaused
     	! t[Time] f[Floor]: C_ElPosition(t, f+1) <- do(t, Up) & ElPosition(t) = f.
         ! t[Time] f[Floor]: C_ElPosition(t, f-1) <- do(t, Down) & ElPosition(t) = f.
         ! t[Time] f[Floor]: C_ElPosition(t, f) <- do(t, Stay) & ElPosition(t) = f.
         ! t[Time] f[Floor]: Cn_ElPosition(t, f) <- ? fx[Floor]: C_ElPosition(t, fx) & f ~= fx.
     }
     
+    // Unanswered requests
     {
         ! t[Time] f[Floor]: UnansweredRequest(Next(t), f) <- C_UnansweredRequest(t, f).
         ! t[Time] f[Floor]: UnansweredRequest(Next(t), f) <- UnansweredRequest(t, f) & ~Cn_UnansweredRequest(t, f).
     }
     {
+        // How changes of the elevators position are caused and uncaused
         ! t[Time] f[Floor]: C_UnansweredRequest(t, f) <- MakeRequest(t, f) & ~UnansweredRequest(t, f).
-        ! t[Time] f[Floor]: Cn_UnansweredRequest(t, f) <- ElPosition(t) = f & do(t, CloseDoor). // De lift is er al geweest en heeft zijn deuren geopend, maakt niet uit wanneer... moet enkel later gebeurd zijn
+        // Elevator is on the specified floor with an unanswered request, has opened its doors and is about to close it's doors
+        ! t[Time] f[Floor]: Cn_UnansweredRequest(t, f) <- ElPosition(t) = f & do(t, CloseDoor). 
     }
     
+    // Direction, needed for the scanning methods. Changes when elevator is at a maximum are there are no unanswered requests in that direction
     {
         //ElDirection(Start) = Idle.
         //! t[Time] d[Direction]: ElDirection(Next(t)) = d <- C_ElDirection(t, d).
@@ -130,8 +136,10 @@ Theory T_student:V_student {
         ! t[Time]: do(t, Stay) <- ~(?f[Floor]: UnansweredRequest(t, f)) & ElDoorState(t) = Closed.   
         
         // Door movement
-        ! t[Time] f[Floor]: do(t, OpenDoor) <- ElPosition(t) = f & ElDoorState(t) = Closed & UnansweredRequest(t, f). // Deur is dicht en een unanswered request hier
-   	 	! t[Time]: do(t, CloseDoor) <- ElDoorState(t) = Open. // Deur staat open en geen unanswered requests hier
+        // Open door if unanswered request on current floor
+        ! t[Time] f[Floor]: do(t, OpenDoor) <- ElPosition(t) = f & ElDoorState(t) = Closed & UnansweredRequest(t, f).
+        // Close door again if it is opened
+   	 	! t[Time]: do(t, CloseDoor) <- ElDoorState(t) = Open.
     }
     
     
