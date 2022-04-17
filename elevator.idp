@@ -152,12 +152,7 @@ Theory T_student:V_student {
     ! t[Time] f[Floor]: do(t, Down) & ElPosition(t) = f => f > MinFloor.
     
     // Doors closed when moving
-    ! t[Time] : do(t, Up) | do(t, Down) => ElDoorState(t) = Closed.
-    
-    // Constraints on dos
-    ! t[Time]: do(t, OpenDoor) => ElDoorState(t) = Closed.
-    ! t[Time]: do(t, CloseDoor) => ElDoorState(t) = Open.
-    
+    ! t[Time] : do(t, Up) | do(t, Down) => ElDoorState(t) = Closed.  
 }
 
 
