@@ -34,11 +34,11 @@ LTCvocabulary V_student {
     type ElAction constructed from {Up, Down, Stay, OpenDoor, CloseDoor}
     do(Time, ElAction) 
     
-    // Needed for the scanning method, direction can only change if nothing in this direction.
-    //type Direction constructed from {GoingUp, GoingDown, Idle}
-    //ElDirection(Time): Direction
-    //C_ElDirection(Time, Direction)
-    //Cn_ElDirection(Time, Direction)
+    // Needed for the scanning method, direction can only change if no unanswered requests in this direction or at a max/min.
+    type Direction constructed from {GoingUp, GoingDown, Idle}
+    ElDirection(Time): Direction
+    C_ElDirection(Time, Direction)
+    Cn_ElDirection(Time, Direction)
     
     // Elevator position, no initial needed becuase starts at bottom = 0
     C_ElPosition(Time, Floor)
@@ -102,17 +102,18 @@ Theory T_student:V_student {
     
     // Direction, needed for the scanning methods. Changes when elevator is at a maximum are there are no unanswered requests in that direction
     {
-        //ElDirection(Start) = Idle.
-        //! t[Time] d[Direction]: ElDirection(Next(t)) = d <- C_ElDirection(t, d).
-        //! t[Time] d[Direction]: ElDirection(Next(t)) = d <- ElDirection(t) = d & ~Cn_ElDirection(t, d).
+        ElDirection(Start) = Idle.
+        ! t[Time] d[Direction]: ElDirection(Next(t)) = d <- C_ElDirection(t, d).
+        ! t[Time] d[Direction]: ElDirection(Next(t)) = d <- ElDirection(t) = d & ~Cn_ElDirection(t, d).
     }
     {
-    	//! t[Time]: C_ElDirection(t, GoingUp) <- do(t, Up) | (ElDoorState(t) ~= Closed & ElDirection(t-1) = GoingUp) .
-      	//! t[Time]: C_ElDirection(t, GoingDown) <- do(t, Down) | (ElDoorState(t) ~= Closed & ElDirection(t-1) = GoingDown).
-        //! t[Time]: C_ElDirection(t, Idle) <- do(t, Stay).
-        //! t[Time] d[Direction]: Cn_ElDirection(t, d) <- ? dx[Direction]: C_ElDirection(t, dx) & d ~= dx.
+    	! t[Time]: C_ElDirection(t, GoingUp) <- do(t, Up).
+      	! t[Time]: C_ElDirection(t, GoingDown) <- do(t, Down).
+        ! t[Time]: C_ElDirection(t, Idle) <- do(t, Stay).
+        ! t[Time] d[Direction]: Cn_ElDirection(t, d) <- ? dx[Direction]: C_ElDirection(t, dx) & d ~= dx.
     }
     
+    // Door state
     {
         ElDoorState(Start) = Closed.
         ! t[Time] ds[DoorState]: ElDoorState(Next(t)) = ds <- C_ElDoorState(t, ds).
@@ -164,7 +165,7 @@ procedure main() {
     //explainunsat(CompleteTheory, S1)
     
     // Change the structure name to try other structures (check the included file "structures.idp" for available provided structures, and feel free to add additional structures)
-    model = onemodel(CompleteTheory, S4)
+    model = onemodel(CompleteTheory, S1)
 
     // Printing model
     print(model)
