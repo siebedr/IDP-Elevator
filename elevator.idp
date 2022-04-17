@@ -27,6 +27,9 @@ LTCvocabulary V_fixed {
 // Here you can add new types, functions and predicates
 LTCvocabulary V_student {
     extern vocabulary V_fixed
+    
+    MinFloor: Floor
+    MaxFloor: Floor
             
     type ElAction constructed from {Up, Down, Stay, OpenDoor, CloseDoor}
     do(Time, ElAction) 
@@ -64,6 +67,11 @@ Theory T_fixed : V_student {
 // STUDENT THEORY
 // Here you should model the dynamic elevator system
 Theory T_student:V_student {
+    {
+        MinFloor = MIN[:Floor].
+		MaxFloor = MAX[:Floor].
+    }
+    
     
     // CAUSE PREDICATES
     {
@@ -107,17 +115,33 @@ Theory T_student:V_student {
     {
         ! t[Time]: C_ElDoorState(t, Open) <- do(t, OpenDoor) & ElDoorState(t) = Closed.
    		! t[Time]: C_ElDoorState(t, Closed) <- do(t, CloseDoor) & ElDoorState(t) = Open.
-        //! t[Time] ds[DoorState]: Cn_ElDoorState(t, ds) <- ? dsx[DoorState]: C_ElDoorState(t, dsx) & ds ~= dsx.
+        ! t[Time] ds[DoorState]: Cn_ElDoorState(t, ds) <- ? dsx[DoorState]: C_ElDoorState(t, dsx) & ds ~= dsx.
+    }
+    
+    
+    // ACTIONS
+    {
+        // Basic movement
+        // Go up if there is a higher unanswered request and this floor has no unanswered requests
+        ! t[Time] f[Floor]: do(t, Up) <- ElPosition(t) = f & ~UnansweredRequest(t, f) & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)).
+        // Go down if there is a lower unanswered request and this floor has no unanswered requests
+        ! t[Time] f[Floor]: do(t, Down) <- ElPosition(t) = f & ~UnansweredRequest(t, f) & (? fx[Floor]: fx < f & UnansweredRequest(t, fx)).
+        // Stay still if their are no unanswered requests
+        ! t[Time]: do(t, Stay) <- ~(?f[Floor]: UnansweredRequest(t, f)) & ElDoorState(t) = Closed.   
+        
+        // Door movement
+        ! t[Time] f[Floor]: do(t, OpenDoor) <- ElPosition(t) = f & ElDoorState(t) = Closed & UnansweredRequest(t, f). // Deur is dicht en een unanswered request hier
+   	 	! t[Time]: do(t, CloseDoor) <- ElDoorState(t) = Open. // Deur staat open en geen unanswered requests hier
     }
     
     
     // PRECONDITIONS
-   	// 1 action at a tim
+   	// 1 action at a time
 	! t[Time]: ?=1 a[ElAction]: do(t, a).
 
 	// Max en Min floor
-    ! t[Time] f[Floor]: ElPosition(t) = f & do(t, Up) => ? fx[Floor]: fx > f.
-    ! t[Time] f[Floor]: ElPosition(t) = f & do(t, Down) => ? fx[Floor]: fx < f.
+    ! t[Time] f[Floor]: do(t, Up) & ElPosition(t) = f =>  f < MaxFloor.
+    ! t[Time] f[Floor]: do(t, Down) & ElPosition(t) = f => f > MinFloor.
     
     // Doors closed when moving
     ! t[Time] : do(t, Up) | do(t, Down) => ElDoorState(t) = Closed.
@@ -125,18 +149,6 @@ Theory T_student:V_student {
     // Constraints on dos
     ! t[Time]: do(t, OpenDoor) => ElDoorState(t) = Closed.
     ! t[Time]: do(t, CloseDoor) => ElDoorState(t) = Open.
-    
-    // BEAHAVIOUR
-    // Basic movement
-    ! t[Time] f[Floor]: ElPosition(t) = f & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)) => do(t, Up). // Go up if there is a higher unanswered request
-    ! t[Time] f[Floor]: ElPosition(t) = f & (? fx[Floor]: fx < f & UnansweredRequest(t, fx)) => do(t, Down). // Go down if there is a lower unanswered request
-    ! t[Time]: ~(?f[Floor]: UnansweredRequest(t, f)) & ElDoorState(t) = Closed => do(t, Stay).
-    
-   	// Door movements
-    ! t[Time] f[Floor]: ElPosition(t) = f & ElDoorState(t) = Closed & UnansweredRequest(t, f) => do(t, OpenDoor). // Deur is dicht en een unanswered request hier
-    ! t[Time]: ElDoorState(t) = Open => do(t, CloseDoor). // Deur staat open en geen unanswered requests hier
-
-    // Scanning specifications
     
 }
 
@@ -146,10 +158,10 @@ Theory T_student:V_student {
 procedure main() {
     local CompleteTheory = merge(T_fixed, T_student)
 
-    explainunsat(CompleteTheory, S1)
+    //explainunsat(CompleteTheory, S1)
     
     // Change the structure name to try other structures (check the included file "structures.idp" for available provided structures, and feel free to add additional structures)
-    model = onemodel(CompleteTheory, S1)
+    model = onemodel(CompleteTheory, S4)
 
     // Printing model
     print(model)
