@@ -113,7 +113,7 @@ Theory T_student:V_student {
     }
     {
         // How changes of the elevators position are caused and uncaused
-        ! t[Time] f[Floor]: C_UnansweredRequest(t, f) <- MakeRequest(t, f).
+        ! t[Time] f[Floor]: C_UnansweredRequest(t, f) <- MakeRequest(t, f) & ~UnansweredRequest(t, f).
         // Elevator is on the specified floor with an unanswered request, has opened its doors and is about to close it's doors
         ! t[Time] f[Floor]: Cn_UnansweredRequest(t, f) <- ElPosition(t) = f & do(t, CloseDoor). 
     }
@@ -195,7 +195,7 @@ procedure main() {
     //explainunsat(CompleteTheory, S3)
     
     // Change the structure name to try other structures (check the included file "structures.idp" for available provided structures, and feel free to add additional structures)
-    model = onemodel(CompleteTheory, S2)
+    model = onemodel(CompleteTheory, S6)
 
     // Printing model
     print(model)
