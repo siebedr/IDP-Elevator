@@ -80,6 +80,7 @@ Theory T_student:V_student {
         MinFloor = MIN[:Floor].
 		MaxFloor = MAX[:Floor].
         
+        // Request on a floor above, below or on the current floor relative to the elevators position
        	! t[Time] f[Floor] fx[Floor]: UpperRequest(t, fx) <- ElPosition(t) = f & fx > f & UnansweredRequest(t,fx).
         ! t[Time] f[Floor] fx[Floor]: LowerRequest(t, fx) <- ElPosition(t) = f & fx < f & UnansweredRequest(t,fx).
         ! t[Time] f[Floor] fx[Floor]: CurrentRequest(t, fx) <- ElPosition(t) = f & fx = f & UnansweredRequest(t,fx).
@@ -124,7 +125,7 @@ Theory T_student:V_student {
         ! t[Time] d[Direction]: ElDirection(Next(t)) = d <- ElDirection(t) = d & ~Cn_ElDirection(t, d).
     }
     {		
-        // Directions for up and down split in 2 cases: when going in the opposite direction and when idle
+        // Directions for up and down split in 2 cases: when going in the opposite direction and when idle. The do operation also contains the logic of the scanning algo.
         ! t[Time] f[Floor]: C_ElDirection(t, GoingUp) <- ElDirection(t) = Idle & do(t, Up).
         ! t[Time] f[Floor]: C_ElDirection(t, GoingUp) <- ElDirection(t) = GoingDown & ElPosition(t) = f & (?fr[Floor]: UpperRequest(t, fr)) & ~(?fx[Floor]: UnansweredRequest(t, fx) & fx < f).
 
@@ -154,6 +155,7 @@ Theory T_student:V_student {
     {
         // Basic movement
         // Go up if there is a higher unanswered request and this floor has no unanswered requests
+        // Also contains the scanning rules in case the elevator was idle for a	while
         ! t[Time] f[Floor]: do(t, Up) <- ElPosition(t) = f & ~UnansweredRequest(t, f) & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)) & ElDirection(t) = GoingUp.
         ! t[Time] f[Floor]: do(t, Up) <- ElDirection(t) = Idle & ElPosition(t) = f & (? fx[Floor]: IsClosestUpperRequest(t, fx) & ~(? fy[Floor]: IsClosestLowerRequest(t, fy) & f-fy < fx-f)).
 
@@ -193,7 +195,7 @@ procedure main() {
     //explainunsat(CompleteTheory, S3)
     
     // Change the structure name to try other structures (check the included file "structures.idp" for available provided structures, and feel free to add additional structures)
-    model = onemodel(CompleteTheory, S6)
+    model = onemodel(CompleteTheory, S2)
 
     // Printing model
     print(model)
