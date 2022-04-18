@@ -30,6 +30,14 @@ LTCvocabulary V_student {
     
     MinFloor: Floor
     MaxFloor: Floor
+    
+    UpperRequest(Time, Floor)
+    LowerRequest(Time, Floor)
+    CurrentRequest(Time, Floor)
+    
+    // Checks if given floor is the closest on that moment
+    IsClosestUpperRequest(Time, Floor)
+    IsClosestLowerRequest(Time, Floor)
             
     type ElAction constructed from {Up, Down, Stay, OpenDoor, CloseDoor}
     do(Time, ElAction) 
@@ -70,6 +78,13 @@ Theory T_student:V_student {
     {
         MinFloor = MIN[:Floor].
 		MaxFloor = MAX[:Floor].
+        
+       	! t[Time] f[Floor] fx[Floor]: UpperRequest(t, fx) <- ElPosition(t) = f & fx > f & UnansweredRequest(t,fx).
+        ! t[Time] f[Floor] fx[Floor]: LowerRequest(t, fx) <- ElPosition(t) = f & fx < f & UnansweredRequest(t,fx).
+        ! t[Time] f[Floor] fx[Floor]: CurrentRequest(t, fx) <- ElPosition(t) = f & fx = f & UnansweredRequest(t,fx).
+
+        ! t[Time] f[Floor]: IsClosestUpperRequest(t, f) <- UpperRequest(t, f) & ~(?fx[Floor]: fx < f & UpperRequest(t,fx)).
+        ! t[Time] f[Floor]: IsClosestLowerRequest(t, f) <- LowerRequest(t, f) & ~(?fx[Floor]: fx > f & UpperRequest(t,fx)).
     }
     
     
@@ -104,13 +119,22 @@ Theory T_student:V_student {
     {
         ElDirection(Start) = Idle.
         ! t[Time] d[Direction]: ElDirection(Next(t)) = d <- C_ElDirection(t, d).
-        ! t[Time] d[Direction]: ElDirection(Next(t)) = d <- ElDirection(t) = d & ~Cn_ElDirection(t, d).
+        //! t[Time] d[Direction]: ElDirection(Next(t)) = d <- ElDirection(t) = d & ~Cn_ElDirection(t, d).
     }
     {
-    	! t[Time]: C_ElDirection(t, GoingUp) <- do(t, Up).
-      	! t[Time]: C_ElDirection(t, GoingDown) <- do(t, Down).
-        ! t[Time]: C_ElDirection(t, Idle) <- do(t, Stay).
-        ! t[Time] d[Direction]: Cn_ElDirection(t, d) <- ? dx[Direction]: C_ElDirection(t, dx) & d ~= dx.
+        //! t[Time] f[Floor]: C_ElDirection(t, GoingUp) <- ElDirection(t) = Idle & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)) & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)).
+		
+        //! t[Time] f[Floor]: C_ElDirection(t, GoingUp) <- ElDirection(t) = Idle & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)) & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)).
+
+
+        
+    	//! t[Time] f[Floor]: C_ElDirection(t, GoingUp) <- ElPosition(t) = f & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)).
+      	//! t[Time] f[Floor]: C_ElDirection(t, GoingDown) <- ElPosition(t) = f & (? fx[Floor]: fx < f & UnansweredRequest(t, fx)).
+        //! t[Time] f[Floor]: C_ElDirection(t, Idle) <- ~do(t, Up).
+        
+    	//! t[Time] f[Floor]: Cn_ElDirection(t, GoingUp) <- ElPosition(t) = f & (f = MaxFloor | ~(? fx[Floor]: fx > f & UnansweredRequest(t, fx))).
+        //! t[Time] f[Floor]: Cn_ElDirection(t, GoingDown) <- ElPosition(t) = f & (? fx[Floor]: fx < f & UnansweredRequest(t, fx)).
+        //! t[Time]: Cn_ElDirection(t, Idle) <- ?f[Floor]: UnansweredRequest(t, f).
     }
     
     // Door state
@@ -130,9 +154,9 @@ Theory T_student:V_student {
     {
         // Basic movement
         // Go up if there is a higher unanswered request and this floor has no unanswered requests
-        ! t[Time] f[Floor]: do(t, Up) <- ElPosition(t) = f & ~UnansweredRequest(t, f) & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)).
+        ! t[Time] f[Floor]: do(t, Up) <- ElPosition(t) = f & ~UnansweredRequest(t, f) & (? fx[Floor]: fx > f & UnansweredRequest(t, fx)) & ElDirection(t) ~= GoingDown.
         // Go down if there is a lower unanswered request and this floor has no unanswered requests
-        ! t[Time] f[Floor]: do(t, Down) <- ElPosition(t) = f & ~UnansweredRequest(t, f) & (? fx[Floor]: fx < f & UnansweredRequest(t, fx)).
+        ! t[Time] f[Floor]: do(t, Down) <- ElPosition(t) = f & ~UnansweredRequest(t, f) & (? fx[Floor]: fx < f & UnansweredRequest(t, fx)) & ElDirection(t) ~= GoingUp.
         // Stay still if their are no unanswered requests
         ! t[Time]: do(t, Stay) <- ~(?f[Floor]: UnansweredRequest(t, f)) & ElDoorState(t) = Closed.   
         
@@ -145,7 +169,7 @@ Theory T_student:V_student {
     
     
     // PRECONDITIONS
-   	// 1 action at a time
+   	// 1 action and direction at a time
 	! t[Time]: ?=1 a[ElAction]: do(t, a).
 
 	// Max en Min floor
@@ -162,7 +186,7 @@ Theory T_student:V_student {
 procedure main() {
     local CompleteTheory = merge(T_fixed, T_student)
 
-    //explainunsat(CompleteTheory, S1)
+    explainunsat(CompleteTheory, S1)
     
     // Change the structure name to try other structures (check the included file "structures.idp" for available provided structures, and feel free to add additional structures)
     model = onemodel(CompleteTheory, S1)
