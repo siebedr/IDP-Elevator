@@ -38,7 +38,6 @@ LTCvocabulary V_student {
     // Checks if given floor is the closest on that moment
     IsClosestUpperRequest(Time, Floor)
     IsClosestLowerRequest(Time, Floor)
-    IsClosestRequest(Time, Floor)
             
     type ElAction constructed from {Up, Down, Stay, OpenDoor, CloseDoor}
     do(Time, ElAction) 
@@ -85,7 +84,7 @@ Theory T_student:V_student {
         ! t[Time] f[Floor] fx[Floor]: CurrentRequest(t, fx) <- ElPosition(t) = f & fx = f & UnansweredRequest(t,fx).
 
         ! t[Time] f[Floor]: IsClosestUpperRequest(t, f) <- UpperRequest(t, f) & ~(?fx[Floor]: fx < f & UpperRequest(t,fx)).
-        ! t[Time] f[Floor]: IsClosestLowerRequest(t, f) <- LowerRequest(t, f) & ~(?fx[Floor]: fx > f & UpperRequest(t,fx)).
+        ! t[Time] f[Floor]: IsClosestLowerRequest(t, f) <- LowerRequest(t, f) & ~(?fx[Floor]: fx > f & LowerRequest(t,fx)).
     }
     
     
@@ -186,7 +185,7 @@ procedure main() {
     //explainunsat(CompleteTheory, S3)
     
     // Change the structure name to try other structures (check the included file "structures.idp" for available provided structures, and feel free to add additional structures)
-    model = onemodel(CompleteTheory, S7)
+    model = onemodel(CompleteTheory, S5)
 
     // Printing model
     print(model)
