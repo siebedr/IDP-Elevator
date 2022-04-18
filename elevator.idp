@@ -31,6 +31,7 @@ LTCvocabulary V_student {
     MinFloor: Floor
     MaxFloor: Floor
     
+    // Requests in a specific direction 
     UpperRequest(Time, Floor)
     LowerRequest(Time, Floor)
     CurrentRequest(Time, Floor)
@@ -83,6 +84,7 @@ Theory T_student:V_student {
         ! t[Time] f[Floor] fx[Floor]: LowerRequest(t, fx) <- ElPosition(t) = f & fx < f & UnansweredRequest(t,fx).
         ! t[Time] f[Floor] fx[Floor]: CurrentRequest(t, fx) <- ElPosition(t) = f & fx = f & UnansweredRequest(t,fx).
 
+        // The closest floors above or under the current floor
         ! t[Time] f[Floor]: IsClosestUpperRequest(t, f) <- UpperRequest(t, f) & ~(?fx[Floor]: fx < f & UpperRequest(t,fx)).
         ! t[Time] f[Floor]: IsClosestLowerRequest(t, f) <- LowerRequest(t, f) & ~(?fx[Floor]: fx > f & LowerRequest(t,fx)).
     }
@@ -122,6 +124,7 @@ Theory T_student:V_student {
         ! t[Time] d[Direction]: ElDirection(Next(t)) = d <- ElDirection(t) = d & ~Cn_ElDirection(t, d).
     }
     {		
+        // Directions for up and down split in 2 cases: when going in the opposite direction and when idle
         ! t[Time] f[Floor]: C_ElDirection(t, GoingUp) <- ElDirection(t) = Idle & ElPosition(t) = f & (? fx[Floor]: IsClosestUpperRequest(t, fx) & ~(? fy[Floor]: IsClosestLowerRequest(t, fy) & f-fy < fx-f)).
         ! t[Time] f[Floor]: C_ElDirection(t, GoingUp) <- ElDirection(t) = GoingDown & ElPosition(t) = f & (?fr[Floor]: UpperRequest(t, fr)) & ~(?fx[Floor]: UnansweredRequest(t, fx) & fx < f).
 
@@ -140,6 +143,7 @@ Theory T_student:V_student {
         ! t[Time] ds[DoorState]: ElDoorState(Next(t)) = ds <- ElDoorState(t) = ds & ~Cn_ElDoorState(t, ds).
     }
     {
+        // Behaviour of the doors
         ! t[Time]: C_ElDoorState(t, Open) <- do(t, OpenDoor) & ElDoorState(t) = Closed.
    		! t[Time]: C_ElDoorState(t, Closed) <- do(t, CloseDoor) & ElDoorState(t) = Open.
         ! t[Time] ds[DoorState]: Cn_ElDoorState(t, ds) <- ? dsx[DoorState]: C_ElDoorState(t, dsx) & ds ~= dsx.
