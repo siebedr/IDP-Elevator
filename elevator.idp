@@ -188,11 +188,15 @@ Theory T_student:V_student {
 
 // INVARIANTS
 // If elevator moves the doors are closed!
-theory move_inv:V_student {}
+theory move_inv:V_student {
+    ! t[Time]: do(t, Up) | do(t, Down) => ElDoorState(t) = Closed.
+}
 
 
 //Doors are never open if there is no call waiting on that floor!
-theory door_in:V_student { }
+theory door_inv:V_student {
+	! t[Time] f[Floor]: ElPosition(t) = f & ~UnansweredRequest(t, f) => ElDoorState(t) = Closed.
+}
 
 procedure proveInvariants() {
 	print(isinvariant(T_student , move_inv , S_Inv)) 
@@ -205,8 +209,8 @@ procedure proveInvariants() {
 procedure main() {
     local CompleteTheory = merge(T_fixed, T_student)
 
-    //explainunsat(CompleteTheory, S3)
-    
+    proveInvariants()
+        
     // Change the structure name to try other structures (check the included file "structures.idp" for available provided structures, and feel free to add additional structures)
     model = onemodel(CompleteTheory, S6)
 
