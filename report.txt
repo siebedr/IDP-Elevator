@@ -1,0 +1,33 @@
+- MinFloor: Floor = The bottom floor (default 0)
+- MaxFloor: Floor = The top floor
+The elevator has to stay within these limits.   
+
+- UpperRequest(Time, Floor) = True for all the floors above the current floor
+- LowerRequest(Time, Floor) = True for al the floors below the current floor
+- CurrentRequest(Time, Floor) = True for the current floor = ElPosition(t)
+   
+- IsClosestUpperRequest(Time, Floor) = True for the closest floor above the current floor
+- IsClosestLowerRequest(Time, Floor)
+These are all used to implement the scan rules. By creating clear predicates the code is more easy to read and extend.
+            
+- type ElAction constructed from {Up, Down, Stay, OpenDoor, CloseDoor} = All actions the elevator can do. Each timestep 1 action is executed.
+- do(Time, ElAction) = Function to execute an action.
+
+- type Direction constructed from {GoingUp, GoingDown, Idle} = Direction of the elevator used to keep track of the previous direction needed for the scanning algorithm.
+- ElDirection(Time): Direction = The current direction
+- C_ElDirection(Time, Direction) = Caused when idle and going in a direction or when going in a direction and no more UnansweredRequests in that direction. Idle is caused when there are no more UnansweredRequests in both directions.
+- Cn_ElDirection(Time, Direction) = Uncaused whenever a direction changes
+
+- I also added some causality predicates for the existing predicates:
+- C_ElPosition(Time, Floor) = Position change is caused when the action Up, Down or Stay is done.
+- Cn_ElPosition(Time, Floor) = Uncaused when new position.
+
+- C_ElDoorState(Time, DoorState) = Caused by an OpenDoor or CloseDoor action.
+- Cn_ElDoorState(Time, DoorState) = Uncaused when state is changed.
+
+- C_UnansweredRequest(Time, Floor) = Caused when there has been a request made and there is not already an existing UnansweredRequest.
+- Cn_UnansweredRequest(Time, Floor) = Uncaused when the elevator after the request has been made opens (and closes) it’s doors.
+
+
+Estimated time: 43 hours
+Major revision: No
