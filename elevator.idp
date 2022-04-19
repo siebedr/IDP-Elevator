@@ -186,6 +186,19 @@ Theory T_student:V_student {
     ! t[Time] : do(t, Up) | do(t, Down) => ElDoorState(t) = Closed.  
 }
 
+// INVARIANTS
+// If elevator moves the doors are closed!
+theory move_inv:V_student {}
+
+
+//Doors are never open if there is no call waiting on that floor!
+theory door_in:V_student { }
+
+procedure proveInvariants() {
+	print(isinvariant(T_student , move_inv , S_Inv)) 
+    print(isinvariant(T_student , door_inv , S_Inv))
+}
+
 
 // MAIN PROCEDURE
 // If you have to change the main procedure for debugging purposes, be careful and restore it back once you finish debugging.

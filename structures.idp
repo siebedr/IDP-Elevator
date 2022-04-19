@@ -53,8 +53,11 @@ Structure S7:V_student {
 }
 
 
-// Feel free to add your own structures here:
-
+Structure S_Inv:V_student { 
+    Time = {0..20}
+    Floor = {0..5}
+    Start = 0
+}
 
 
 
